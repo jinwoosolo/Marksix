@@ -1,0 +1,8 @@
+[
+  "tests/test_metrics.py::test_distribution_sums_to_one",
+  "tests/test_metrics.py::test_random_expectation",
+  "tests/test_scoring.py::test_ranking_partition",
+  "tests/test_wheel.py::test_candidates_are_six_unique",
+  "tests/test_wheel.py::test_optimizer_count",
+  "tests/test_wheel.py::test_prize"
+]
