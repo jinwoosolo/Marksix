@@ -33,7 +33,7 @@ def _clean(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def download_legacy_csv(url: str = DEFAULT_REMOTE_CSV, timeout: int = 20) -> pd.DataFrame:
-    r = requests.get(url, timeout=timeout, headers={'User-Agent':'Marksix-AI-Lab/2.0'})
+    r = requests.get(url, timeout=timeout, headers={'User-Agent':'Marksix-AI-Lab/2.1'})
     r.raise_for_status()
     return _clean(pd.read_csv(io.BytesIO(r.content)))
 

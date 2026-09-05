@@ -1,27 +1,47 @@
-# Mark Six AI Lab V2
+# Mark Six AI Lab V2.1
 
-A research-first Streamlit rebuild of the original `Marksix-analyzer` project.
+A Streamlit research dashboard for transparent Mark Six ranking, strict walk-forward validation, and a budget-constrained **2 Core + 3 Secondary + Any 1** wheel.
 
-## Goals
+## What changed in V2.1
 
-1. Separate **main-number hits** from the Extra number.
-2. Validate the Core-12 hypothesis with strict walk-forward testing.
-3. Compare every model with a mathematically defined random baseline.
-4. Research the user's **2 Core + 3 Secondary + 1** Smart Wheel structure.
-5. Optimize a finite betting budget for score + diversification instead of pretending an unlimited "full cover" is practical.
-6. Keep prediction, backtesting and UI logic modular.
+V2.1 focuses on the actual strategy hypothesis instead of only asking whether Core 12 averages more hits than random. Every historical prediction uses only data available before that draw, and the six main numbers are evaluated separately from the Extra number.
 
-> Important: model scores are rankings, not guaranteed probabilities. A fair lottery is expected to be random; the purpose of this project is to test whether any apparent historical edge survives out-of-sample validation.
+The Backtest page now measures two different questions:
 
-## Pages
+- **Core 12 prediction:** average main-number hits vs the exact random expectation `12 × 6 / 49 = 1.469...`.
+- **Wheel structure:** whether the actual draw has **Core >= 2 and Secondary >= 3**, which is the draw structure a complete `2C + 3S + Any1` wheel can represent.
 
-- **Home** — latest draw, Core 12, Secondary 32, Lowest-ranked 5.
-- **Prediction** — transparent statistical models and an experimental logistic-regression model.
-- **Smart Wheel** — 2 Core + 3 Secondary + 1, with budget-aware ticket diversification.
-- **Backtest** — strict walk-forward Core-12 validation; Extra is reported separately.
-- **Model Lab** — compares Legacy 60/40, frequency, recent trend, gap and ensemble models under identical rules.
+It also shows the exact `2 Core / 3 Secondary / 1 Lowest` rate, a full Pool Composition Matrix, random partition probabilities, and rolling stability.
 
-## Repository structure
+## Models
+
+- `legacy_60_40` — original frequency/gap spirit, retained as a benchmark.
+- `frequency` — long-run main-number frequency.
+- `recent` — 30/60/120 draw recent-frequency blend.
+- `gap` — current omission gap.
+- `ensemble` — V2 transparent blend.
+- `ensemble_v2` — V2.1 robust rank blend across multiple frequency windows plus a modest gap component.
+- `ml_logistic` — experimental Logistic Regression on the Prediction page only.
+
+No model score is presented as a true probability. A model should only be treated as interesting if it survives walk-forward and independent holdout testing.
+
+## Smart Wheel V2.1
+
+The old wheel generated one arbitrary sixth number per five-number skeleton. V2.1 generates valid six-number candidate structures directly:
+
+- `2 Core + 4 Secondary`
+- `3 Core + 3 Secondary`
+- `2 Core + 3 Secondary + 1 Lowest` when the sixth-number pool is all 49 numbers
+
+The optimizer then selects a fixed number of tickets according to the user's budget, balancing:
+
+1. ranking score,
+2. overlap with already-selected tickets,
+3. repeated use of the same numbers.
+
+This improves **coverage allocation**, not the intrinsic probability of any single ticket.
+
+## Project structure
 
 ```text
 Marksix/
@@ -29,7 +49,6 @@ Marksix/
 ├── requirements.txt
 ├── README.md
 ├── data/
-│   └── README.md
 ├── pages/
 │   ├── 1_Prediction.py
 │   ├── 2_Smart_Wheel.py
@@ -44,147 +63,37 @@ Marksix/
 │   ├── backtest.py
 │   ├── wheel.py
 │   └── ui.py
+├── scripts/
 ├── tests/
-└── .github/workflows/tests.yml
+├── .streamlit/
+└── .github/workflows/
 ```
-
-## Data
-
-On first run, if `data/marksix.csv` does not exist, the app automatically bootstraps the public historical CSV from the old project:
-
-`https://raw.githubusercontent.com/jinwoosolo/Marksix-analyzer/main/marksix.csv`
-
-After download it is saved locally as `data/marksix.csv`.
-
-Required fields are:
-
-```text
-date,n1,n2,n3,n4,n5,n6,extra
-```
-
-Additional legacy columns are preserved when available.
 
 ## Run locally
 
-Python 3.11 is recommended.
-
 ```bash
-python -m venv .venv
-```
-
-Windows:
-
-```bash
-.venv\Scripts\activate
-pip install -r requirements.txt
+python -m pip install -r requirements.txt
 streamlit run app.py
 ```
 
-macOS/Linux:
+On first launch, if `data/marksix.csv` does not exist, the data loader attempts to bootstrap from the existing public `jinwoosolo/Marksix-analyzer` dataset.
 
-```bash
-source .venv/bin/activate
-pip install -r requirements.txt
-streamlit run app.py
-```
+## Streamlit Community Cloud
 
-## Streamlit Community Cloud deployment
+Use:
 
-1. Push all files to `jinwoosolo/Marksix`.
-2. In Streamlit Community Cloud, create a new app.
-3. Repository: `jinwoosolo/Marksix`
-4. Branch: `main`
-5. Main file: `app.py`
-6. Deploy.
+- Repository: `jinwoosolo/Marksix`
+- Branch: `main`
+- Main file: `app.py`
 
-The first app launch needs outbound internet access so it can bootstrap `data/marksix.csv` if the CSV is not committed to the new repository.
+## Recommended validation workflow
 
-### Recommended production setup
+1. Run 1,000-draw Model Lab comparison.
+2. Compare `ensemble_v2` with `ensemble`, `gap`, `legacy_60_40`, frequency and recent.
+3. Focus on both **Core 12 average hits** and **2C+3S+Any1 structure rate**.
+4. Do not tune endlessly on the same 1,000 draws.
+5. Freeze a final holdout period before claiming any edge.
 
-For maximum reliability, copy the latest `marksix.csv` from the old repository into `data/marksix.csv` and commit it. The automatic remote bootstrap then becomes a fallback rather than a hard dependency.
+## Interpretation warning
 
-## Core-12 benchmark
-
-For 6 main numbers drawn from 49, a random set of 12 numbers has expected main-number hits:
-
-```text
-12 × 6 / 49 = 1.469387755...
-```
-
-The Backtest page compares observed Core-12 results with this baseline. It reports:
-
-- average main-number hits;
-- bootstrap confidence interval;
-- 2+, 3+ and 4+ hit rates;
-- one-sided permutation p-value;
-- Extra hit separately.
-
-A good-looking historical average is **not** enough. If many models or weights are tested, reserve a final untouched holdout period before making any claim of edge.
-
-## Smart Wheel logic
-
-Default partition:
-
-```text
-49 numbers
-├── Core 12
-├── Secondary 32
-└── Lowest-ranked 5
-```
-
-Ticket template:
-
-```text
-2 Core + 3 Secondary + 1 additional number
-```
-
-There are:
-
-```text
-C(12,2) = 66 Core pairs
-C(32,3) = 4,960 Secondary triples
-66 × 4,960 = 327,360 five-number skeletons
-```
-
-Adding every possible sixth number to every skeleton creates millions of raw variants and many duplicates. V2 therefore exposes a finite-budget optimizer that tries to balance model score with ticket diversification.
-
-## Models
-
-### `legacy_60_40`
-Recreates the spirit of V1's 60% frequency + 40% gap ranking, but normalizes components for comparison.
-
-### `frequency`
-Long-run frequency only.
-
-### `recent`
-Short- and medium-window frequency blend.
-
-### `gap`
-Gap ranking only. Included mainly to test whether the mean-reversion assumption actually survives out-of-sample testing.
-
-### `ensemble`
-Transparent blend of long-term frequency, recent frequency, trend, gap and previous-draw status. This is a research baseline, not a claim of true predictive probability.
-
-### `ml_logistic`
-Experimental logistic-regression ranking trained on historical number-level features. It is intentionally not the default until it passes proper holdout validation.
-
-## Tests
-
-```bash
-pytest -q
-```
-
-GitHub Actions runs the test suite on pushes and pull requests.
-
-## Next research milestones
-
-- Frozen final holdout period.
-- Multiple-testing correction when comparing many weights/models.
-- Full Smart-Wheel historical backtest at equal ticket counts against random tickets.
-- Prize-tier and cost/return simulation using historical prize tables where reliable.
-- Periodic model refit for ML walk-forward evaluation.
-- Coverage diagnostics: unique tickets, number exposure, pair/triple exposure and overlap heat maps.
-
-## Responsible interpretation
-
-The app should describe the bottom five as **Lowest-ranked 5**, not "five numbers that will not appear". Likewise, a Core 12 score is a model ranking rather than a guarantee or objectively known draw probability.
+Mark Six is designed as a random draw. Historical patterns can be measured and ranked, but statistical variation can easily look like a predictive signal. More tickets increase coverage and cost; they do not make an individual combination intrinsically more likely to be drawn.
